@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Checkout Debug</title>
+  
+  <!-- Braintree SDK -->
+  <script src="https://js.braintreegateway.com/web/3.125.0/js/client.min.js"></script>
+  <script src="https://js.braintreegateway.com/web/3.125.0/js/hosted-fields.min.js"></script>
+  
+  <!-- Three.js -->
+  <script src="https://unpkg.com/three@0.147.0/build/three.min.js"></script>
+  
+  <!-- Animation Library -->
+  <script src="https://unpkg.com/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
+  
+  <style>
+    body {
+      margin: 0;
+      background: #1e3c72;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    #debug-info {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.8);
+      padding: 10px;
+      border-radius: 5px;
+      z-index: 1000;
+    }
+    #three-canvas {
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div id="debug-info">
+    <h3>Debug Information</h3>
+    <div id="status">Initializing...</div>
+  </div>
+  
+  <canvas id="three-canvas"></canvas>
+
+  <script>
+    function updateStatus(message) {
+      console.log(message);
+      document.getElementById('status').innerHTML += '<br>' + message;
+    }
+
+    async function testInitialization() {
+      try {
+        updateStatus('🔍 Starting debug test...');
+        
+        // Test 1: Check if Three.js is loaded
+        if (typeof THREE !== 'undefined') {
+          updateStatus('✅ Three.js loaded successfully');
+        } else {
+          updateStatus('❌ Three.js not loaded');
+          return;
+        }
+        
+        // Test 2: Check if Braintree is loaded
+        if (typeof braintree !== 'undefined') {
+          updateStatus('✅ Braintree SDK loaded successfully');
+        } else {
+          updateStatus('❌ Braintree SDK not loaded');
+          return;
+        }
+        
+        // Test 3: Check if TWEEN is loaded
+        if (typeof TWEEN !== 'undefined') {
+          updateStatus('✅ TWEEN.js loaded successfully');
+        } else {
+          updateStatus('❌ TWEEN.js not loaded');
+        }
+        
+        // Test 4: Test server connection
+        try {
+          const response = await fetch('/client-token');
+          
+          if (!response.ok) {
+            updateStatus('❌ Server responded with ' + response.status + ': ' + response.statusText);
+            return;
+          }
+          
+          const data = await response.json();
+          console.log('Server response:', data);
+          
+          if (data.success && data.clientToken) {
+            updateStatus('✅ Server connection successful');
+            updateStatus('✅ Braintree client token received');
+            
+            // Test 5: Test Braintree client creation
+            try {
+              const client = await braintree.client.create({
+                authorization: data.clientToken
+              });
+              updateStatus('✅ Braintree client created successfully');
+              console.log('Braintree client:', client);
+            } catch (braintreeError) {
+              updateStatus('❌ Braintree client creation failed: ' + braintreeError.message);
+              console.error('Braintree error:', braintreeError);
+            }
+          } else {
+            updateStatus('❌ Failed to get client token: ' + (data.error || 'Unknown error'));
+            console.error('Server error response:', data);
+            return;
+          }
+        } catch (error) {
+          updateStatus('❌ Server connection failed: ' + error.message);
+          console.error('Fetch error:', error);
+          return;
+        }
+        
+        // Test 5: Test basic Three.js scene
+        try {
+          const canvas = document.getElementById('three-canvas');
+          const scene = new THREE.Scene();
+          const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+          const renderer = new THREE.WebGLRenderer({ canvas: canvas });
+          renderer.setSize(window.innerWidth, window.innerHeight);
+          
+          // Create a simple cube
+          const geometry = new THREE.BoxGeometry();
+          const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+          const cube = new THREE.Mesh(geometry, material);
+          scene.add(cube);
+          
+          camera.position.z = 5;
+          
+          // Render once
+          renderer.render(scene, camera);
+          updateStatus('✅ Basic Three.js scene rendered');
+          
+          // Test animation
+          function animate() {
+            requestAnimationFrame(animate);
+            cube.rotation.x += 0.01;
+            cube.rotation.y += 0.01;
+            renderer.render(scene, camera);
+          }
+          animate();
+          updateStatus('✅ Three.js animation working');
+          
+        } catch (error) {
+          updateStatus('❌ Three.js scene error: ' + error.message);
+          console.error('Three.js error:', error);
+          return;
+        }
+        
+        // Test 6: All tests complete
+        updateStatus('🎉 All tests passed! The issue might be in the complex integration.');
+        
+      } catch (error) {
+        updateStatus('❌ Unexpected error: ' + error.message);
+        console.error('Debug error:', error);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', testInitialization);
+  </script>
+</body>
+</html>

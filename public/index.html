@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Checkout Experience</title>
+  <meta name="description" content="An innovative 3D checkout experience with secure payment processing">
+  
+  <!-- Braintree SDK -->
+  <script src="https://js.braintreegateway.com/web/3.125.0/js/client.min.js"></script>
+  <script src="https://js.braintreegateway.com/web/3.125.0/js/hosted-fields.min.js"></script>
+  
+  <!-- Three.js -->
+    <!-- Three.js -->
+  <script src="https://unpkg.com/three@0.147.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+  
+  <!-- Animation Library -->
+  <script src="https://unpkg.com/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Initializing 3D Checkout...</div>
+  </div>
+
+  <!-- Main Application Container -->
+  <div id="app-container">
+    <!-- 3D Scene Canvas -->
+    <canvas id="three-canvas"></canvas>
+    
+    <!-- UI Overlay -->
+    <div id="ui-overlay">
+      <!-- Header -->
+      <header class="checkout-header">
+        <h1>3D Secure Checkout</h1>
+        <div class="security-badge">
+          <span class="security-icon">🔒</span>
+          <span>Secured by Braintree</span>
+        </div>
+      </header>
+
+      <!-- Checkout Form Container -->
+      <div id="checkout-form-container">
+        <div class="form-section">
+          <h2>Payment Information</h2>
+          
+          <!-- Product Summary -->
+          <div class="product-summary">
+            <div class="product-item">
+              <span class="product-name">Premium 3D Experience</span>
+              <span class="product-price">$29.99</span>
+            </div>
+            <div class="total-amount">
+              <span class="total-label">Total:</span>
+              <span class="total-price" id="total-amount">$29.99</span>
+            </div>
+          </div>
+
+          <!-- Payment Form -->
+          <form id="checkout-form">
+            <!-- Card Number Field -->
+            <div class="form-group">
+              <label for="card-number">Card Number</label>
+              <div class="hosted-field" id="card-number"></div>
+              <div class="field-error" id="card-number-error"></div>
+            </div>
+
+            <!-- Expiration Date Field -->
+            <div class="form-group">
+              <label for="expiration-date">Expiration Date</label>
+              <div class="hosted-field" id="expiration-date"></div>
+              <div class="field-error" id="expiration-date-error"></div>
+            </div>
+
+            <!-- CVV Field -->
+            <div class="form-group">
+              <label for="cvv">CVV</label>
+              <div class="hosted-field" id="cvv"></div>
+              <div class="field-error" id="cvv-error"></div>
+            </div>
+
+            <!-- Postal Code Field -->
+            <div class="form-group">
+              <label for="postal-code">Postal Code</label>
+              <div class="hosted-field" id="postal-code"></div>
+              <div class="field-error" id="postal-code-error"></div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="submit-button" class="submit-btn" disabled>
+              <span class="btn-text">Complete Payment</span>
+              <span class="btn-spinner" style="display: none;"></span>
+            </button>
+          </form>
+
+          <!-- Payment Status -->
+          <div id="payment-status" class="payment-status" style="display: none;">
+            <div class="status-icon"></div>
+            <div class="status-message"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3D Scene Controls -->
+      <div id="scene-controls">
+        <button id="reset-camera" class="control-btn" title="Reset Camera">
+          <span>🎯</span>
+        </button>
+        <button id="toggle-theme" class="control-btn" title="Toggle Theme">
+          <span>🌙</span>
+        </button>
+        <button id="toggle-particles" class="control-btn" title="Toggle Particles">
+          <span>✨</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script src="js/three-scene.js"></script>
+  <script src="js/braintree-integration.js"></script>
+  <script src="js/checkout-3d.js"></script>
+
+  <script>
+    // Initialize the application when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      const app = new CheckoutApp();
+      app.initialize();
+    });
+  </script>
+</body>
+</html>
