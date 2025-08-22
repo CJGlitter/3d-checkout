@@ -349,9 +349,13 @@ class CheckoutApp {
     
     this.currentStep = 'complete';
     
-    // Trigger 3D success animation
+    // Trigger 3D success animation with transaction data
     if (this.scene) {
-      this.scene.animateSuccess();
+      this.scene.animateSuccess({
+        transactionId: transaction.id,
+        status: 'Successful',
+        environment: this.braintree.environment
+      });
     }
     
     // Show success message

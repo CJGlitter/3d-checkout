@@ -352,6 +352,7 @@ class ThreeScene {
    */
   addEventListeners() {
     window.addEventListener('resize', this.onWindowResize.bind(this));
+    this.canvas.addEventListener('click', this.onCanvasClick.bind(this));
   }
   
   /**
@@ -365,6 +366,56 @@ class ThreeScene {
     // if (this.composer) {
     //   this.composer.setSize(window.innerWidth, window.innerHeight);
     // }
+  }
+  
+  /**
+   * Handle canvas click for interactive elements
+   */
+  onCanvasClick(event) {
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    
+    // Calculate mouse position in normalized device coordinates
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    
+    // Set up raycaster
+    raycaster.setFromCamera(mouse, this.camera);
+    
+    // Check for intersections with clickable objects
+    const intersects = raycaster.intersectObjects(this.scene.children, true);
+    
+    for (let intersect of intersects) {
+      const object = intersect.object;
+      if (object.userData && object.userData.isClickable) {
+        if (object.userData.type === 'transactionLink') {
+          // Open transaction URL in new window
+          window.open(object.userData.url, '_blank');
+          
+          // Add visual feedback
+          this.animateClickFeedback(object);
+          break;
+        }
+      }
+    }
+  }
+  
+  /**
+   * Animate click feedback for interactive elements
+   */
+  animateClickFeedback(object) {
+    const originalScale = { x: object.scale.x, y: object.scale.y, z: object.scale.z };
+    
+    const scaleDown = new TWEEN.Tween(object.scale)
+      .to({ x: originalScale.x * 0.9, y: originalScale.y * 0.9, z: originalScale.z * 0.9 }, 100)
+      .easing(TWEEN.Easing.Quadratic.Out);
+    
+    const scaleUp = new TWEEN.Tween(object.scale)
+      .to(originalScale, 100)
+      .easing(TWEEN.Easing.Quadratic.Out);
+    
+    scaleDown.chain(scaleUp);
+    scaleDown.start();
   }
   
   /**
@@ -537,7 +588,7 @@ class ThreeScene {
   /**
    * Animate success state
    */
-  animateSuccess() {
+  animateSuccess(transactionData = null) {
     // Green glow animation
     const successMaterial = new THREE.MeshBasicMaterial({
       color: 0x51cf66,
@@ -551,6 +602,11 @@ class ThreeScene {
     
     // Multi-colored confetti burst
     this.createConfettiBurst();
+    
+    // Create floating transaction status object
+    if (transactionData) {
+      this.createTransactionStatusObject(transactionData);
+    }
     
     // Card celebration animation
     const celebrationTween = new TWEEN.Tween(this.cardGroup.position)
@@ -716,6 +772,142 @@ class ThreeScene {
   }
   
   /**
+   * Create floating transaction status object
+   */
+  createTransactionStatusObject(transactionData) {
+    const { transactionId, status, environment } = transactionData;
+    
+    // Use environment data from transaction or fallback to defaults
+    const braintreeEnv = environment?.braintreeEnvironment || 'sandbox';
+    const merchantId = environment?.merchantId || 'zm9j9g4t8jfp749x';
+    
+    // Create the transaction status group
+    const statusGroup = new THREE.Group();
+    
+    // Create main status panel
+    const panelGeometry = new THREE.BoxGeometry(3, 1.5, 0.1);
+    const panelMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x51cf66,
+      metalness: 0.2,
+      roughness: 0.3,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.1,
+      transparent: true,
+      opacity: 0.9,
+    });
+    const statusPanel = new THREE.Mesh(panelGeometry, panelMaterial);
+    statusGroup.add(statusPanel);
+    
+    // Create status text
+    const statusText = this.createTransactionTextMesh(`Payment ${status}!`, 0.20, '#ffffff');
+    statusText.position.set(0, 0.3, 0.06);
+    statusGroup.add(statusText);
+    
+    // Create transaction ID text (clickable)
+    const transactionText = this.createTransactionTextMesh(`ID: ${transactionId}`, 0.16, '#4ecdc4');
+    transactionText.position.set(0, -0.3, 0.06);
+    statusGroup.add(transactionText);
+    
+    // Store transaction URL for click handling
+    const baseUrl = braintreeEnv === 'sandbox' 
+      ? 'https://sandbox.braintreegateway.com'
+      : 'https://braintreegateway.com';
+    const transactionUrl = `${baseUrl}/merchants/${merchantId}/transactions/${transactionId}`;
+    
+    // Add click handler to the entire status panel
+    statusPanel.userData = { 
+      isClickable: true, 
+      url: transactionUrl,
+      type: 'transactionLink'
+    };
+    
+    // Also make the text elements clickable for better UX
+    statusText.userData = { 
+      isClickable: true, 
+      url: transactionUrl,
+      type: 'transactionLink'
+    };
+    
+    transactionText.userData = { 
+      isClickable: true, 
+      url: transactionUrl,
+      type: 'transactionLink'
+    };
+    
+    // Position the status object to float up from below
+    statusGroup.position.set(3, -5, 0);
+    statusGroup.rotation.y = -Math.PI * 0.1;
+    this.scene.add(statusGroup);
+    
+    // Animate the status object floating up
+    this.animateTransactionStatus(statusGroup);
+    
+    // Store reference for cleanup
+    this.transactionStatusObject = statusGroup;
+    
+    // Auto-remove after 13 seconds
+    setTimeout(() => {
+      if (this.transactionStatusObject) {
+        this.scene.remove(this.transactionStatusObject);
+        this.transactionStatusObject = null;
+      }
+    }, 13000);
+  }
+  
+  /**
+   * Create text mesh specifically for transaction status
+   */
+  createTransactionTextMesh(text, size, color) {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.width = 612;
+    canvas.height = 128;
+    
+    context.fillStyle = color;
+    context.font = `${size * 300}px Arial`;
+    context.textAlign = 'center';
+    context.fillText(text, canvas.width / 2, canvas.height / 2 + size * 45);
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+    });
+    
+    const geometry = new THREE.PlaneGeometry(2.5, 0.4);
+    return new THREE.Mesh(geometry, material);
+  }
+  
+  /**
+   * Animate transaction status object
+   */
+  animateTransactionStatus(statusGroup) {
+    // Float up animation
+    const floatUpTween = new TWEEN.Tween(statusGroup.position)
+      .to({ y: 2 }, 1500)
+      .easing(TWEEN.Easing.Quadratic.Out);
+    
+    // Gentle floating motion
+    const floatTween = new TWEEN.Tween(statusGroup.position)
+      .to({ y: 2.5 }, 2000)
+      .easing(TWEEN.Easing.Sinusoidal.InOut)
+      .repeat(Infinity)
+      .yoyo(true);
+    
+    // Rotation animation
+    const rotationTween = new TWEEN.Tween(statusGroup.rotation)
+      .to({ y: statusGroup.rotation.y + Math.PI * 0.1 }, 3000)
+      .easing(TWEEN.Easing.Sinusoidal.InOut)
+      .repeat(Infinity)
+      .yoyo(true);
+    
+    // Start animations
+    floatUpTween.chain(floatTween);
+    floatUpTween.start();
+    rotationTween.start();
+  }
+  
+  /**
    * Reset camera position
    */
   resetCamera() {
@@ -820,6 +1012,7 @@ class ThreeScene {
     }
     
     window.removeEventListener('resize', this.onWindowResize);
+    this.canvas.removeEventListener('click', this.onCanvasClick);
   }
 }
 

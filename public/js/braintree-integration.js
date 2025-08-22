@@ -8,6 +8,7 @@ class BraintreeIntegration {
     this.client = null;
     this.hostedFields = null;
     this.clientToken = null;
+    this.environment = null;
     this.isInitialized = false;
     
     // Field state tracking
@@ -64,7 +65,8 @@ class BraintreeIntegration {
       }
       
       this.clientToken = data.clientToken;
-      console.log('✅ Client token received');
+      this.environment = data.environment;
+      console.log('✅ Client token and environment data received');
     } catch (error) {
       console.error('❌ Error getting client token:', error);
       throw error;
