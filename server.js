@@ -46,6 +46,10 @@ app.get('/client-token', async (req, res) => {
     res.json({
       success: true,
       clientToken: response.clientToken,
+      environment: {
+        braintreeEnvironment: process.env.BRAINTREE_ENVIRONMENT,
+        merchantId: process.env.BRAINTREE_MERCHANT_ID,
+      },
     });
   } catch (error) {
     console.error('Error generating client token:', error);
