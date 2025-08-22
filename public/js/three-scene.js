@@ -42,6 +42,19 @@ class ThreeScene {
   }
   
   /**
+   * Generate dynamic expiry date (today + 1 year + 1 month)
+   */
+  generateExpiryDate() {
+    const today = new Date();
+    const expiryDate = new Date(today.getFullYear() + 1, today.getMonth() + 1, 1);
+    
+    const month = String(expiryDate.getMonth() + 1).padStart(2, '0');
+    const year = String(expiryDate.getFullYear()).slice(-2);
+    
+    return `${month}/${year}`;
+  }
+  
+  /**
    * Initialize the Three.js scene
    */
   init() {
@@ -238,12 +251,12 @@ class ThreeScene {
    */
   createCardDetails() {
     // Card number display
-    this.cardNumberMesh = this.createTextMesh('**** **** **** ****', 0.2);
+    this.cardNumberMesh = this.createTextMesh('4111 1111 1111 1111', 0.2);
     this.cardNumberMesh.position.set(0, -0.3, 0.06);
     this.cardGroup.add(this.cardNumberMesh);
     
     // Expiry date display
-    this.expiryMesh = this.createTextMesh('MM/YY', 0.15);
+    this.expiryMesh = this.createTextMesh(this.generateExpiryDate(), 0.15);
     this.expiryMesh.position.set(-0.8, -0.8, 0.06);
     this.cardGroup.add(this.expiryMesh);
     
@@ -260,13 +273,13 @@ class ThreeScene {
   createTextMesh(text, size) {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
-    canvas.width = 512;
+    canvas.width = 612;
     canvas.height = 128;
     
     context.fillStyle = '#ffffff';
-    context.font = `${size * 100}px Arial`;
+    context.font = `${size * 300}px Arial`;
     context.textAlign = 'center';
-    context.fillText(text, canvas.width / 2, canvas.height / 2 + size * 30);
+    context.fillText(text, canvas.width / 2, canvas.height / 2 + size * 45);
     
     const texture = new THREE.CanvasTexture(canvas);
     const material = new THREE.MeshBasicMaterial({
@@ -380,16 +393,23 @@ class ThreeScene {
    * Update card number display
    */
   updateCardNumber(number) {
+    // If no number provided or empty, show the default unmasked placeholder
+    if (!number || number.trim() === '') {
+      this.updateTextMesh(this.cardNumberMesh, '4111 1111 1111 1111');
+      return;
+    }
+    
+    // If user has entered data, apply masking
     const masked = number.replace(/\d(?=\d{4})/g, '*');
     const formatted = masked.replace(/(.{4})/g, '$1 ').trim();
-    this.updateTextMesh(this.cardNumberMesh, formatted || '**** **** **** ****');
+    this.updateTextMesh(this.cardNumberMesh, formatted);
   }
   
   /**
    * Update expiry date display
    */
   updateExpiryDate(date) {
-    this.updateTextMesh(this.expiryMesh, date || 'MM/YY');
+    this.updateTextMesh(this.expiryMesh, date || this.generateExpiryDate());
   }
   
   /**
@@ -397,7 +417,7 @@ class ThreeScene {
    */
   updateCVV(cvv) {
     const masked = cvv.replace(/./g, '*');
-    this.updateTextMesh(this.cvvMesh, masked || '***');
+    this.updateTextMesh(this.cvvMesh, masked || '123');
   }
   
   /**
@@ -406,13 +426,13 @@ class ThreeScene {
   updateTextMesh(mesh, text) {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
-    canvas.width = 512;
+    canvas.width = 612;
     canvas.height = 128;
     
     context.fillStyle = '#ffffff';
-    context.font = '40px Arial';
+    context.font = '60px Arial';
     context.textAlign = 'center';
-    context.fillText(text, canvas.width / 2, canvas.height / 2 + 15);
+    context.fillText(text, canvas.width / 2, canvas.height / 2 + 22);
     
     mesh.material.map.image = canvas;
     mesh.material.map.needsUpdate = true;
@@ -529,8 +549,8 @@ class ThreeScene {
     const successGlow = new THREE.Mesh(successGeometry, successMaterial);
     this.cardGroup.add(successGlow);
     
-    // Particle burst
-    this.createSuccessParticles();
+    // Multi-colored confetti burst
+    this.createConfettiBurst();
     
     // Card celebration animation
     const celebrationTween = new TWEEN.Tween(this.cardGroup.position)
@@ -545,45 +565,154 @@ class ThreeScene {
   }
   
   /**
-   * Create success particle burst
+   * Create multi-colored 3D confetti burst
    */
-  createSuccessParticles() {
-    const particleCount = 50;
-    const geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(particleCount * 3);
+  createConfettiBurst() {
+    const confettiCount = 150;
+    const confettiPieces = [];
     
-    for (let i = 0; i < particleCount * 3; i += 3) {
-      positions[i] = (Math.random() - 0.5) * 2;
-      positions[i + 1] = (Math.random() - 0.5) * 2;
-      positions[i + 2] = (Math.random() - 0.5) * 2;
+    // Confetti colors
+    const colors = [
+      0xff6b6b, // Red
+      0x4ecdc4, // Teal
+      0xffd93d, // Yellow
+      0x6bcf7f, // Green
+      0x4d96ff, // Blue
+      0xff9ff3, // Pink
+      0xffa726, // Orange
+      0x9c27b0, // Purple
+    ];
+    
+    for (let i = 0; i < confettiCount; i++) {
+      // Create individual confetti piece
+      const confetti = this.createConfettiPiece(colors[Math.floor(Math.random() * colors.length)]);
+      
+      // Position around the card
+      confetti.position.set(
+        this.cardGroup.position.x + (Math.random() - 0.5) * 2,
+        this.cardGroup.position.y + (Math.random() - 0.5) * 2,
+        this.cardGroup.position.z + (Math.random() - 0.5) * 2
+      );
+      
+      // Random initial rotation
+      confetti.rotation.set(
+        Math.random() * Math.PI * 2,
+        Math.random() * Math.PI * 2,
+        Math.random() * Math.PI * 2
+      );
+      
+      this.scene.add(confetti);
+      confettiPieces.push(confetti);
+      
+      // Animate each confetti piece
+      this.animateConfettiPiece(confetti, i);
     }
     
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    // Clean up confetti after animation
+    setTimeout(() => {
+      confettiPieces.forEach(piece => {
+        this.scene.remove(piece);
+      });
+    }, 3000);
+  }
+  
+  /**
+   * Create a single confetti piece with random shape
+   */
+  createConfettiPiece(color) {
+    const shapes = ['rectangle', 'circle', 'triangle'];
+    const shape = shapes[Math.floor(Math.random() * shapes.length)];
     
-    const material = new THREE.PointsMaterial({
-      color: 0x51cf66,
-      size: 0.1,
+    let geometry;
+    
+    switch (shape) {
+      case 'rectangle':
+        geometry = new THREE.PlaneGeometry(0.1, 0.05);
+        break;
+      case 'circle':
+        geometry = new THREE.CircleGeometry(0.04, 8);
+        break;
+      case 'triangle':
+        geometry = new THREE.ConeGeometry(0.04, 0.08, 3);
+        break;
+      default:
+        geometry = new THREE.PlaneGeometry(0.1, 0.05);
+    }
+    
+    const material = new THREE.MeshLambertMaterial({
+      color: color,
       transparent: true,
+      opacity: 0.9,
+      side: THREE.DoubleSide,
     });
     
-    const burstParticles = new THREE.Points(geometry, material);
-    burstParticles.position.copy(this.cardGroup.position);
-    this.scene.add(burstParticles);
+    const confetti = new THREE.Mesh(geometry, material);
     
-    // Animate particles
-    const expandTween = new TWEEN.Tween(burstParticles.scale)
-      .to({ x: 3, y: 3, z: 3 }, 1000)
-      .easing(TWEEN.Easing.Quadratic.Out);
+    // Add some metallic sheen for extra sparkle
+    if (Math.random() > 0.7) {
+      material.emissive.setHex(color);
+      material.emissiveIntensity = 0.2;
+    }
     
-    const fadeTween = new TWEEN.Tween(material)
-      .to({ opacity: 0 }, 1000)
-      .easing(TWEEN.Easing.Quadratic.Out)
-      .onComplete(() => {
-        this.scene.remove(burstParticles);
-      });
+    return confetti;
+  }
+  
+  /**
+   * Animate individual confetti piece with realistic physics
+   */
+  animateConfettiPiece(confetti, index) {
+    // Random velocity and direction
+    const velocity = {
+      x: (Math.random() - 0.5) * 8,
+      y: Math.random() * 6 + 2, // Always upward initially
+      z: (Math.random() - 0.5) * 8,
+    };
     
-    expandTween.start();
-    fadeTween.start();
+    // Gravity and air resistance
+    const gravity = -9.8;
+    const airResistance = 0.98;
+    const rotationSpeed = {
+      x: (Math.random() - 0.5) * 0.3,
+      y: (Math.random() - 0.5) * 0.3,
+      z: (Math.random() - 0.5) * 0.3,
+    };
+    
+    // Stagger the launch for more natural effect
+    const delay = index * 10;
+    
+    setTimeout(() => {
+      const animate = () => {
+        // Update position based on velocity
+        confetti.position.x += velocity.x * 0.016; // 60fps
+        confetti.position.y += velocity.y * 0.016;
+        confetti.position.z += velocity.z * 0.016;
+        
+        // Apply gravity
+        velocity.y += gravity * 0.016;
+        
+        // Apply air resistance
+        velocity.x *= airResistance;
+        velocity.y *= airResistance;
+        velocity.z *= airResistance;
+        
+        // Add rotation for tumbling effect
+        confetti.rotation.x += rotationSpeed.x;
+        confetti.rotation.y += rotationSpeed.y;
+        confetti.rotation.z += rotationSpeed.z;
+        
+        // Fade out as it falls
+        if (confetti.position.y < -5) {
+          confetti.material.opacity -= 0.02;
+        }
+        
+        // Continue animation if still visible and above ground
+        if (confetti.material.opacity > 0 && confetti.position.y > -10) {
+          requestAnimationFrame(animate);
+        }
+      };
+      
+      animate();
+    }, delay);
   }
   
   /**
