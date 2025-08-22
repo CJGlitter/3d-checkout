@@ -124,33 +124,36 @@ class BraintreeIntegration {
   }
   
   /**
-   * Get styles for hosted fields
+   * Get styles for hosted fields - Updated for card overlay
    */
   getFieldStyles() {
     return {
       input: {
-        'font-size': '16px',
+        'font-size': '14px',
         'font-family': 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
-        'font-weight': '400',
-        color: '#ffffff',
+        'font-weight': '500',
+        color: '#333333',
         'background-color': 'transparent',
         border: 'none',
         outline: 'none',
-        'line-height': '50px',
-        height: '50px',
+        'line-height': '20px',
+        height: '100%',
+        width: '100%',
+        padding: '8px 12px',
         'box-sizing': 'border-box',
         '::placeholder': {
-          color: 'rgba(255, 255, 255, 0.6)',
+          color: 'rgba(51, 51, 51, 0.6)',
+          'font-style': 'italic',
         },
       },
       ':focus': {
-        color: '#ffffff',
+        color: '#222222',
       },
       '.valid': {
-        color: '#51cf66',
+        color: '#2d5016',
       },
       '.invalid': {
-        color: '#ff6b6b',
+        color: '#cc0000',
       },
     };
   }

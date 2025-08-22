@@ -37,72 +37,58 @@
     <div id="ui-overlay">
       <!-- Header -->
       <header class="checkout-header">
-        <h1>3D Secure Checkout</h1>
+        <h1>3D Checkout</h1>
         <div class="security-badge">
           <span class="security-icon">🔒</span>
           <span>Secured by Braintree</span>
         </div>
       </header>
 
-      <!-- Checkout Form Container -->
+      <!-- Product Summary -->
+      <div class="product-summary">
+        <div class="product-item">
+          <span class="product-name">Premium 3D Experience</span>
+          <span class="product-price">$29.99</span>
+        </div>
+        <div class="total-amount">
+          <span class="total-label">Total:</span>
+          <span class="total-price" id="total-amount">$29.99</span>
+        </div>
+      </div>
+
+      <!-- Checkout Form Container - Overlays the 3D card -->
       <div id="checkout-form-container">
-        <div class="form-section">
-          <h2>Payment Information</h2>
-          
-          <!-- Product Summary -->
-          <div class="product-summary">
-            <div class="product-item">
-              <span class="product-name">Premium 3D Experience</span>
-              <span class="product-price">$29.99</span>
-            </div>
-            <div class="total-amount">
-              <span class="total-label">Total:</span>
-              <span class="total-price" id="total-amount">$29.99</span>
-            </div>
-          </div>
+        <!-- Payment Form with positioned overlays -->
+        <form id="checkout-form">
+          <!-- Card Number Field - Overlays card number area -->
+          <div class="hosted-field" id="card-number"></div>
 
-          <!-- Payment Form -->
-          <form id="checkout-form">
-            <!-- Card Number Field -->
-            <div class="form-group">
-              <label for="card-number">Card Number</label>
-              <div class="hosted-field" id="card-number"></div>
-              <div class="field-error" id="card-number-error"></div>
-            </div>
+          <!-- Expiration Date Field - Overlays expiry area -->
+          <div class="hosted-field" id="expiration-date"></div>
 
-            <!-- Expiration Date Field -->
-            <div class="form-group">
-              <label for="expiration-date">Expiration Date</label>
-              <div class="hosted-field" id="expiration-date"></div>
-              <div class="field-error" id="expiration-date-error"></div>
-            </div>
+          <!-- CVV Field - Overlays CVV area on card back -->
+          <div class="hosted-field" id="cvv"></div>
 
-            <!-- CVV Field -->
-            <div class="form-group">
-              <label for="cvv">CVV</label>
-              <div class="hosted-field" id="cvv"></div>
-              <div class="field-error" id="cvv-error"></div>
-            </div>
+          <!-- Postal Code Field - Positioned below card -->
+          <div class="hosted-field" id="postal-code"></div>
 
-            <!-- Postal Code Field -->
-            <div class="form-group">
-              <label for="postal-code">Postal Code</label>
-              <div class="hosted-field" id="postal-code"></div>
-              <div class="field-error" id="postal-code-error"></div>
-            </div>
+          <!-- Submit Button -->
+          <button type="submit" id="submit-button" class="submit-btn" disabled>
+            <span class="btn-text">Complete Payment</span>
+            <span class="btn-spinner" style="display: none;"></span>
+          </button>
+        </form>
 
-            <!-- Submit Button -->
-            <button type="submit" id="submit-button" class="submit-btn" disabled>
-              <span class="btn-text">Complete Payment</span>
-              <span class="btn-spinner" style="display: none;"></span>
-            </button>
-          </form>
+        <!-- Field Error Messages -->
+        <div class="field-error" id="card-number-error"></div>
+        <div class="field-error" id="expiration-date-error"></div>
+        <div class="field-error" id="cvv-error"></div>
+        <div class="field-error" id="postal-code-error"></div>
 
-          <!-- Payment Status -->
-          <div id="payment-status" class="payment-status" style="display: none;">
-            <div class="status-icon"></div>
-            <div class="status-message"></div>
-          </div>
+        <!-- Payment Status -->
+        <div id="payment-status" class="payment-status" style="display: none;">
+          <div class="status-icon"></div>
+          <div class="status-message"></div>
         </div>
       </div>
 

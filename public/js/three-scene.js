@@ -76,6 +76,10 @@ class ThreeScene {
       
       this.animate();
       console.log('✅ Animation loop started');
+      
+      // Set initial field positions
+      setTimeout(() => this.updateFieldPositions(), 100);
+      console.log('✅ Initial field positions set');
     } catch (error) {
       console.error('❌ Error in Three.js scene initialization:', error);
       throw error;
@@ -227,8 +231,8 @@ class ThreeScene {
     logo.position.set(1.2, 0.5, 0.06);
     this.cardGroup.add(logo);
     
-    // Position the card
-    this.cardGroup.position.set(-3, 0, 0);
+    // Position the card in the center for overlay alignment
+    this.cardGroup.position.set(0, 0, 0);
     this.cardGroup.rotation.y = Math.PI * 0.1;
     this.scene.add(this.cardGroup);
   }
@@ -444,15 +448,161 @@ class ThreeScene {
   }
   
   /**
-   * Handle field focus
+   * Get the screen coordinates of the 3D card
    */
+  getCardScreenPosition() {
+    if (!this.cardGroup || !this.camera || !this.renderer) {
+      return null;
+    }
+    
+    // Get the card's world position
+    const cardPosition = new THREE.Vector3();
+    this.cardGroup.getWorldPosition(cardPosition);
+    
+    // Project to screen coordinates
+    const screenPosition = cardPosition.clone();
+    screenPosition.project(this.camera);
+    
+    // Convert to pixel coordinates
+    const canvas = this.renderer.domElement;
+    const x = (screenPosition.x * 0.5 + 0.5) * canvas.clientWidth;
+    const y = (screenPosition.y * -0.5 + 0.5) * canvas.clientHeight;
+    
+    return { x, y };
+  }
+  
+  /**
+   * Get the screen size of the card in pixels
+   */
+  getCardScreenSize() {
+    if (!this.cardGroup || !this.camera || !this.renderer) {
+      return null;
+    }
+    
+    // Get card world position
+    const cardPosition = new THREE.Vector3();
+    this.cardGroup.getWorldPosition(cardPosition);
+    
+    // Calculate card corners in world space
+    const cardWidth = 4; // Card geometry width
+    const cardHeight = 2.5; // Card geometry height
+    
+    const topLeft = cardPosition.clone().add(new THREE.Vector3(-cardWidth/2, cardHeight/2, 0));
+    const bottomRight = cardPosition.clone().add(new THREE.Vector3(cardWidth/2, -cardHeight/2, 0));
+    
+    // Project to screen coordinates
+    topLeft.project(this.camera);
+    bottomRight.project(this.camera);
+    
+    // Convert to pixel coordinates
+    const canvas = this.renderer.domElement;
+    const tlX = (topLeft.x * 0.5 + 0.5) * canvas.clientWidth;
+    const tlY = (topLeft.y * -0.5 + 0.5) * canvas.clientHeight;
+    const brX = (bottomRight.x * 0.5 + 0.5) * canvas.clientWidth;
+    const brY = (bottomRight.y * -0.5 + 0.5) * canvas.clientHeight;
+    
+    return {
+      width: Math.abs(brX - tlX),
+      height: Math.abs(brY - tlY),
+      topLeft: { x: tlX, y: tlY },
+      bottomRight: { x: brX, y: brY }
+    };
+  }
+  
+  /**
+   * Update field positions based on card screen position
+   */
+  updateFieldPositions() {
+    const cardSize = this.getCardScreenSize();
+    if (!cardSize) return;
+    
+    const formContainer = document.getElementById('checkout-form-container');
+    if (!formContainer) return;
+    
+    // Position the form container to match the card
+    formContainer.style.left = `${cardSize.topLeft.x}px`;
+    formContainer.style.top = `${cardSize.topLeft.y}px`;
+    formContainer.style.width = `${cardSize.width}px`;
+    formContainer.style.height = `${cardSize.height}px`;
+    formContainer.style.transform = 'none';
+    
+    // Check card rotation to determine visibility
+    const isCardFlipped = this.cardGroup && Math.abs(this.cardGroup.rotation.y) > Math.PI / 2;
+    
+    // Update individual field positions with visibility
+    this.updateIndividualFieldPositions(cardSize, isCardFlipped);
+  }
+  
+  /**
+   * Update individual field positions within the card
+   */
+  updateIndividualFieldPositions(cardSize, isCardFlipped = false) {
+    // Card number field - center area (only visible on front)
+    const cardNumberField = document.getElementById('card-number');
+    if (cardNumberField) {
+      cardNumberField.style.left = '15%';
+      cardNumberField.style.top = '60%';
+      cardNumberField.style.width = '70%';
+      cardNumberField.style.height = '12%';
+      cardNumberField.style.opacity = isCardFlipped ? '0' : '1';
+      cardNumberField.style.pointerEvents = isCardFlipped ? 'none' : 'auto';
+    }
+    
+    // Expiry field - bottom left (only visible on front)
+    const expiryField = document.getElementById('expiration-date');
+    if (expiryField) {
+      expiryField.style.left = '15%';
+      expiryField.style.top = '75%';
+      expiryField.style.width = '35%';
+      expiryField.style.height = '10%';
+      expiryField.style.opacity = isCardFlipped ? '0' : '1';
+      expiryField.style.pointerEvents = isCardFlipped ? 'none' : 'auto';
+    }
+    
+    // CVV field - positioned for card back (only visible when flipped)
+    const cvvField = document.getElementById('cvv');
+    if (cvvField) {
+      cvvField.style.left = '60%';
+      cvvField.style.top = '40%';
+      cvvField.style.width = '25%';
+      cvvField.style.height = '10%';
+      cvvField.style.opacity = isCardFlipped ? '1' : '0';
+      cvvField.style.pointerEvents = isCardFlipped ? 'auto' : 'none';
+    }
+    
+    // Postal code - below card (always visible)
+    const postalField = document.getElementById('postal-code');
+    if (postalField) {
+      postalField.style.left = '15%';
+      postalField.style.top = '110%';
+      postalField.style.width = '40%';
+      postalField.style.height = '10%';
+      postalField.style.opacity = '1';
+      postalField.style.pointerEvents = 'auto';
+    }
+    
+    // Submit button - below card (always visible)
+    const submitBtn = document.getElementById('submit-button');
+    if (submitBtn) {
+      submitBtn.style.left = '25%';
+      submitBtn.style.top = '130%';
+      submitBtn.style.width = '50%';
+      submitBtn.style.height = '15%';
+      submitBtn.style.opacity = '1';
+      submitBtn.style.pointerEvents = 'auto';
+    }
+  }
   onFieldFocused(fieldName) {
+    console.log(`🎯 Field focused: ${fieldName}`);
+    
     if (fieldName === 'cvv') {
-      // Flip card to show back
+      // Flip card to show back and show CVV overlay
       this.flipCardToBack();
+      this.showCVVOverlay();
     } else {
       // Ensure card is showing front
       this.flipCardToFront();
+      this.hideCVVOverlay();
     }
     
     // Add glow effect
@@ -460,16 +610,45 @@ class ThreeScene {
   }
   
   /**
-   * Handle field blur
+   * Handle field blur - Updated for card overlay interaction
    */
   onFieldBlurred(fieldName) {
+    console.log(`👁️ Field blurred: ${fieldName}`);
     this.removeFieldGlow(fieldName);
+    
+    // Don't automatically flip back from CVV unless another field is focused
+  }
+  
+  /**
+   * Show CVV overlay on card flip
+   */
+  showCVVOverlay() {
+    const formContainer = document.getElementById('checkout-form-container');
+    if (formContainer) {
+      formContainer.classList.add('card-flipped');
+    }
+  }
+  
+  /**
+   * Hide CVV overlay when card flips back
+   */
+  hideCVVOverlay() {
+    const formContainer = document.getElementById('checkout-form-container');
+    if (formContainer) {
+      formContainer.classList.remove('card-flipped');
+    }
   }
   
   /**
    * Flip card to back
    */
   flipCardToBack() {
+    // Add flipped class for CSS animations
+    const formContainer = document.getElementById('checkout-form-container');
+    if (formContainer) {
+      formContainer.classList.add('card-flipped');
+    }
+    
     const targetRotation = { y: Math.PI };
     const tween = new TWEEN.Tween(this.cardGroup.rotation)
       .to(targetRotation, 800)
@@ -481,6 +660,12 @@ class ThreeScene {
    * Flip card to front
    */
   flipCardToFront() {
+    // Remove flipped class for CSS animations
+    const formContainer = document.getElementById('checkout-form-container');
+    if (formContainer) {
+      formContainer.classList.remove('card-flipped');
+    }
+    
     const targetRotation = { y: Math.PI * 0.1 };
     const tween = new TWEEN.Tween(this.cardGroup.rotation)
       .to(targetRotation, 800)
@@ -667,6 +852,9 @@ class ThreeScene {
       this.cardGroup.position.y = Math.sin(this.clock.elapsedTime * 0.5) * 0.1;
       this.cardGroup.rotation.z = Math.sin(this.clock.elapsedTime * 0.3) * 0.02;
     }
+    
+    // Update field positions to match card position
+    this.updateFieldPositions();
     
     // Render
     if (this.composer) {
